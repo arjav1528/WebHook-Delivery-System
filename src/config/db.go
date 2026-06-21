@@ -31,7 +31,7 @@ func ConnectDB() *mongo.Database {
 
 	pingerr := db.Client().Ping(ctx, nil)
 
-	if err != nil {
+	if pingerr != nil {
 		fmt.Printf("pingerr: %v\n", pingerr)
 		os.Exit(1)
 	}
