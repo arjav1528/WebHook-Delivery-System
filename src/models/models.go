@@ -44,6 +44,8 @@ type Delivery struct {
 	WebhookID primitive.ObjectID `bson:"webhook_id"`
 	Status    DeliveryStatus     `bson:"status"`
 	Retry     int                `bson:"retry"`
+	CreatedAt time.Time          `bson:"created_at"`
+	
 }
 
 func (et EventType) IsValid() bool {
@@ -81,6 +83,10 @@ func (d *Delivery) Validate() error {
 		return fmt.Errorf("retry count must be between 0 and 3, got %d", d.Retry)
 	}
 
+	if d.CreatedAt.IsZero() {
+		d.CreatedAt = time.Now()
+	}
+
 	return nil
 }
 
@@ -95,6 +101,10 @@ func (e *Event) Validate() error {
 
 	if e.Data == nil {
 		return fmt.Errorf("event data is required")
+	}
+
+	if e.CreatedAt.IsZero() {
+		e.CreatedAt = time.Now()
 	}
 
 	return nil
@@ -115,6 +125,10 @@ func (w *Webhook) Validate() error {
 
 	if !w.Event.IsValid() {
 		return fmt.Errorf("invalid event type: %s. allowed: user.created, user.deleted", w.Event)
+	}
+
+	if w.CreatedAt.IsZero() {
+		w.CreatedAt = time.Now()
 	}
 
 	return nil
