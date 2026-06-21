@@ -7,6 +7,7 @@ import (
 )
 
 type DeliveryJob struct {
+	DeliveryID    primitive.ObjectID
 	WebhookID     primitive.ObjectID
 	EventID       primitive.ObjectID
 	RetryCount    int

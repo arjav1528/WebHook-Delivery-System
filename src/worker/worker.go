@@ -39,7 +39,7 @@ func ProcessDeliveryJobs(job queue.DeliveryJob) {
 	var webhook models.Webhook
 	if err := config.WebHookCollection.FindOne(ctx, bson.M{"_id": job.WebhookID}).Decode(&webhook); err != nil {
 		fmt.Printf("err: %v\n", err)
-		if updateErr := UpdateDeliveryStatus(ctx, job.EventID, job.WebhookID, models.DeliveryFailed, err.Error(), job.RetryCount); updateErr != nil {
+		if updateErr := UpdateDeliveryStatus(ctx, job.DeliveryID, models.DeliveryFailed, err.Error(), job.RetryCount); updateErr != nil {
 			fmt.Printf("err: %v\n", updateErr)
 		}
 		return
@@ -48,7 +48,7 @@ func ProcessDeliveryJobs(job queue.DeliveryJob) {
 	var event models.Event
 	if err := config.EventCollection.FindOne(ctx, bson.M{"_id": job.EventID}).Decode(&event); err != nil {
 		fmt.Printf("err: %v\n", err)
-		if updateErr := UpdateDeliveryStatus(ctx, job.EventID, job.WebhookID, models.DeliveryFailed, err.Error(), job.RetryCount); updateErr != nil {
+		if updateErr := UpdateDeliveryStatus(ctx, job.DeliveryID, models.DeliveryFailed, err.Error(), job.RetryCount); updateErr != nil {
 			fmt.Printf("err: %v\n", updateErr)
 		}
 		return
@@ -63,7 +63,7 @@ func ProcessDeliveryJobs(job queue.DeliveryJob) {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
-		if updateErr := UpdateDeliveryStatus(ctx, job.EventID, job.WebhookID, models.DeliveryFailed, err.Error(), job.RetryCount); updateErr != nil {
+		if updateErr := UpdateDeliveryStatus(ctx, job.DeliveryID, models.DeliveryFailed, err.Error(), job.RetryCount); updateErr != nil {
 			fmt.Printf("err: %v\n", updateErr)
 		}
 		return
@@ -96,7 +96,7 @@ func ProcessDeliveryJobs(job queue.DeliveryJob) {
 
 	if res.StatusCode >= 200 && res.StatusCode < 300 {
 		fmt.Println("Webhook Success POST")
-		if updateErr := UpdateDeliveryStatus(ctx, job.EventID, job.WebhookID, models.DeliverySuccess, "", job.RetryCount); updateErr != nil {
+		if updateErr := UpdateDeliveryStatus(ctx, job.DeliveryID, models.DeliverySuccess, "", job.RetryCount); updateErr != nil {
 			fmt.Printf("err: %v\n", updateErr)
 		}
 		return
@@ -123,7 +123,7 @@ func HandleDeliveryFailure(ctx context.Context, job queue.DeliveryJob, errorMsg 
 		newJob := job
 		newJob.RetryCount++
 		newJob.NextRetryTime = time.Now().Add(backoffDuration)
-		if err := UpdateDeliveryStatus(ctx, job.EventID, job.WebhookID, models.DeliveryPending, errorMsg, newJob.RetryCount); err != nil {
+		if err := UpdateDeliveryStatus(ctx, job.DeliveryID, models.DeliveryPending, errorMsg, newJob.RetryCount); err != nil {
 			return err
 		}
 		queue.DeliveryQueue <- newJob
@@ -132,7 +132,7 @@ func HandleDeliveryFailure(ctx context.Context, job queue.DeliveryJob, errorMsg 
 		return nil
 	}
 
-	if err := UpdateDeliveryStatus(ctx, job.EventID, job.WebhookID, models.DeliveryFailed, errorMsg, job.RetryCount); err != nil {
+	if err := UpdateDeliveryStatus(ctx, job.DeliveryID, models.DeliveryFailed, errorMsg, job.RetryCount); err != nil {
 		return err
 	}
 
@@ -140,17 +140,14 @@ func HandleDeliveryFailure(ctx context.Context, job queue.DeliveryJob, errorMsg 
 	return nil
 }
 
-func UpdateDeliveryStatus(ctx context.Context, eventId, webhookId primitive.ObjectID, status models.DeliveryStatus, errMsg string, retryCount int) error {
-	filter := bson.M{
-		"event_id":   eventId,
-		"webhook_id": webhookId,
-	}
+func UpdateDeliveryStatus(ctx context.Context, deliveryID primitive.ObjectID, status models.DeliveryStatus, errMsg string, retryCount int) error {
+	filter := bson.M{"_id": deliveryID}
 
 	update := bson.M{
 		"$set": bson.M{
-			"status":      status,
-			"retry_count": retryCount,
-			"last_err":    errMsg,
+			"status":   status,
+			"retry":    retryCount,
+			"last_err": errMsg,
 		},
 	}
 

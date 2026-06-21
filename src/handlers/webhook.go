@@ -6,7 +6,6 @@ import (
 	"github.com/arjav1528/webhook-delivery-system/src/config"
 	"github.com/arjav1528/webhook-delivery-system/src/models"
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func RegisterWebhook(c *gin.Context) {
@@ -21,7 +20,7 @@ func RegisterWebhook(c *gin.Context) {
 		return
 	}
 
-	webhook.ID = primitive.NewObjectID()
+	// webhook.ID = primitive.NewObjectID()
 
 	if err := webhook.Validate(); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
