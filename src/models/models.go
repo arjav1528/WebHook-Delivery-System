@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -24,15 +25,17 @@ const (
 )
 
 type Webhook struct {
-	ID    primitive.ObjectID `bson:"_id,omitempty"`
-	URL   string             `bson:"url,omitempty"`
-	Event EventType          `bson:"event"`
+	ID        primitive.ObjectID `bson:"_id,omitempty"`
+	URL       string             `bson:"url,omitempty"`
+	Event     EventType          `bson:"event"`
+	CreatedAt time.Time          `bson:"created_at"`
 }
 
 type Event struct {
-	ID   primitive.ObjectID `bson:"_id,omitempty"`
-	Type EventType          `bson:"type"`
-	Data any                `bson:"data"`
+	ID        primitive.ObjectID `bson:"_id,omitempty"`
+	Type      EventType          `bson:"type"`
+	Data      any                `bson:"data"`
+	CreatedAt time.Time          `bson:"created_at"`
 }
 
 type Delivery struct {
@@ -70,7 +73,7 @@ func (d *Delivery) Validate() error {
 		return fmt.Errorf("webhook_id is required")
 	}
 
-	if d.Status.IsValid() {
+	if !d.Status.IsValid() {
 		return fmt.Errorf("invalid status: %s. allowed: pending, success, failed", d.Status)
 	}
 
