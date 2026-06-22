@@ -21,7 +21,7 @@ var (
 	initErr            error
 )
 
-func ConnectDB() *mongo.Database {
+func ConnectDB() {
 	once.Do(func() {
 		ctx := context.Background()
 		if err := godotenv.Load(".env"); err != nil {
@@ -56,5 +56,4 @@ func ConnectDB() *mongo.Database {
 		EventCollection = db.Collection("events")
 		DeliveryCollection = db.Collection("deliveries")
 	})
-	return db
 }
