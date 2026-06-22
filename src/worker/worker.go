@@ -145,9 +145,10 @@ func UpdateDeliveryStatus(ctx context.Context, deliveryID primitive.ObjectID, st
 
 	update := bson.M{
 		"$set": bson.M{
-			"status":   status,
-			"retry":    retryCount,
-			"last_err": errMsg,
+			"status":     status,
+			"retry":      retryCount,
+			"last_error": errMsg,
+			"updated_at": time.Now().UTC(),
 		},
 	}
 
