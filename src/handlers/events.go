@@ -110,7 +110,12 @@ func TriggerEvent(c *gin.Context) {
 			NextRetryTime: time.Now().UTC(),
 		}
 
-		queue.EnqueueJob(deliveryJob)
+		if err := queue.EnqueueJob(deliveryJob); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to enqueue job: " + err.Error(),
+			})
+			return
+		}
 	}
 
 	c.JSON(http.StatusAccepted, gin.H{

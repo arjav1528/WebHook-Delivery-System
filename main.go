@@ -13,6 +13,7 @@ import (
 func main() {
 	r := gin.Default()
 	config.ConnectDB()
+	config.ConnectRedis()
 	queue.Init()
 	worker.StartWorkers(5)
 
