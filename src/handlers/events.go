@@ -22,6 +22,10 @@ func TriggerEvent(c *gin.Context) {
 		return
 	}
 
+	if event.CreatedAt.IsZero() {
+		event.CreatedAt = time.Now().UTC()
+	}
+
 	if err := event.Validate(); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
@@ -65,13 +69,21 @@ func TriggerEvent(c *gin.Context) {
 		return
 	}
 
-
 	for _, hook := range webhook {
 		newDelivery := models.Delivery{
 			WebhookID: hook.ID,
 			EventID:   eventID,
 			Status:    models.DeliveryPending,
 			Retry:     0,
+			CreatedAt: time.Now().UTC(),
+			UpdatedAt: time.Now().UTC(),
+		}
+
+		if err := newDelivery.Validate(); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
 		}
 
 		deliveryRes, err := config.DeliveryCollection.InsertOne(c.Request.Context(), newDelivery)
@@ -95,7 +107,7 @@ func TriggerEvent(c *gin.Context) {
 			WebhookID:     hook.ID,
 			EventID:       eventID,
 			RetryCount:    0,
-			NextRetryTime: time.Now(),
+			NextRetryTime: time.Now().UTC(),
 		}
 		queue.DeliveryQueue <- deliveryJob
 	}

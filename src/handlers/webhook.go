@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/arjav1528/webhook-delivery-system/src/config"
 	"github.com/arjav1528/webhook-delivery-system/src/models"
@@ -20,7 +21,9 @@ func RegisterWebhook(c *gin.Context) {
 		return
 	}
 
-	// webhook.ID = primitive.NewObjectID()
+	if webhook.CreatedAt.IsZero() {
+		webhook.CreatedAt = time.Now().UTC()
+	}
 
 	if err := webhook.Validate(); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{

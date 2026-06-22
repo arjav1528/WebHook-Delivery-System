@@ -44,8 +44,9 @@ type Delivery struct {
 	WebhookID primitive.ObjectID `bson:"webhook_id"`
 	Status    DeliveryStatus     `bson:"status"`
 	Retry     int                `bson:"retry"`
+	LastError string             `bson:"last_error,omitempty"`
 	CreatedAt time.Time          `bson:"created_at"`
-	
+	UpdatedAt time.Time          `bson:"updated_at"`
 }
 
 func (et EventType) IsValid() bool {
@@ -84,7 +85,11 @@ func (d *Delivery) Validate() error {
 	}
 
 	if d.CreatedAt.IsZero() {
-		d.CreatedAt = time.Now()
+		d.CreatedAt = time.Now().UTC()
+	}
+
+	if d.UpdatedAt.IsZero() {
+		d.UpdatedAt = d.CreatedAt
 	}
 
 	return nil
@@ -104,7 +109,7 @@ func (e *Event) Validate() error {
 	}
 
 	if e.CreatedAt.IsZero() {
-		e.CreatedAt = time.Now()
+		e.CreatedAt = time.Now().UTC()
 	}
 
 	return nil
@@ -128,7 +133,7 @@ func (w *Webhook) Validate() error {
 	}
 
 	if w.CreatedAt.IsZero() {
-		w.CreatedAt = time.Now()
+		w.CreatedAt = time.Now().UTC()
 	}
 
 	return nil
