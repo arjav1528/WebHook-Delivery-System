@@ -1,0 +1,47 @@
+services:
+  # ---- MongoDB ----
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: mongosh --eval "db.adminCommand('ping')" --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---- Redis ----
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # ---- Webhook Delivery App ----
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      # Docker DNS resolves "mongodb" and "redis" to the container IPs
+      - MONGO_URI=mongodb://mongodb:27017
+      - REDIS_ADDR=redis:6379
+      - REDIS_USERNAME=
+      - REDIS_PASSWORD=
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: on-failure
+
+volumes:
+  mongo_data:
