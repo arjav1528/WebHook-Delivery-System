@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -8,7 +9,6 @@ import (
 	"github.com/arjav1528/webhook-delivery-system/src/models"
 	"github.com/arjav1528/webhook-delivery-system/src/queue"
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
@@ -33,21 +33,18 @@ func TriggerEvent(c *gin.Context) {
 		return
 	}
 
+	log.Default().Println("event: ", event)
+
 	res, err := config.EventCollection.InsertOne(c.Request.Context(), event)
 	if err != nil {
+		log.Default().Println("event insert err: ", string(err.Error()))
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
 		return
 	}
 
-	eventID, ok := res.InsertedID.(primitive.ObjectID)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "event insert returned an unexpected id type",
-		})
-		return
-	}
+	log.Default().Println("res: ", res)
 
 	var webhook []models.Webhook
 
@@ -55,6 +52,7 @@ func TriggerEvent(c *gin.Context) {
 
 	cur, err := config.WebHookCollection.Find(c.Request.Context(), filter)
 	if err != nil {
+		log.Default().Println("webhook find err: ", string(err.Error()))
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -63,6 +61,7 @@ func TriggerEvent(c *gin.Context) {
 	defer cur.Close(c.Request.Context())
 
 	if err := cur.All(c.Request.Context(), &webhook); err != nil {
+		log.Default().Println("webhook find all err: ", string(err.Error()))
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -72,7 +71,7 @@ func TriggerEvent(c *gin.Context) {
 	for _, hook := range webhook {
 		newDelivery := models.Delivery{
 			WebhookID: hook.ID,
-			EventID:   eventID,
+			EventID:   event.ID,
 			Status:    models.DeliveryPending,
 			Retry:     0,
 			CreatedAt: time.Now().UTC(),
@@ -80,6 +79,7 @@ func TriggerEvent(c *gin.Context) {
 		}
 
 		if err := newDelivery.Validate(); err != nil {
+			log.Default().Println("delivery validate err: ", string(err.Error()))
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
@@ -88,14 +88,16 @@ func TriggerEvent(c *gin.Context) {
 
 		deliveryRes, err := config.DeliveryCollection.InsertOne(c.Request.Context(), newDelivery)
 		if err != nil {
+			log.Default().Println("delivery insert err: ", string(err.Error()))
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
 			return
 		}
 
-		deliveryID, ok := deliveryRes.InsertedID.(primitive.ObjectID)
+		deliveryID, ok := deliveryRes.InsertedID.(bson.ObjectID)
 		if !ok {
+			log.Default().Println("delivery insert returned an unexpected id type")
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "delivery insert returned an unexpected id type",
 			})
@@ -105,12 +107,13 @@ func TriggerEvent(c *gin.Context) {
 		deliveryJob := queue.DeliveryJob{
 			DeliveryID:    deliveryID,
 			WebhookID:     hook.ID,
-			EventID:       eventID,
+			EventID:       event.ID,
 			RetryCount:    0,
 			NextRetryTime: time.Now().UTC(),
 		}
 
 		if err := queue.EnqueueJob(deliveryJob); err != nil {
+			log.Default().Println("queue enqueue job err: ", string(err.Error()))
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Failed to enqueue job: " + err.Error(),
 			})
@@ -120,7 +123,7 @@ func TriggerEvent(c *gin.Context) {
 
 	c.JSON(http.StatusAccepted, gin.H{
 		"message":  "event accepted",
-		"event_id": eventID.Hex(),
+		"event_id": event.ID.Hex(),
 		"webhooks": len(webhook),
 	})
 }

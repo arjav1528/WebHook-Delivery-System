@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type (
@@ -25,7 +25,7 @@ const (
 )
 
 type Webhook struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty"`
+	ID        bson.ObjectID `bson:"_id,omitempty"`
 	URL       string             `bson:"url,omitempty"`
 	Event     EventType          `bson:"event"`
 	Secret    string             `bson:"secret,omitempty"`
@@ -33,16 +33,16 @@ type Webhook struct {
 }
 
 type Event struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty"`
+	ID        bson.ObjectID `bson:"_id,omitempty"`
 	Type      EventType          `bson:"type"`
 	Data      any                `bson:"data"`
 	CreatedAt time.Time          `bson:"created_at"`
 }
 
 type Delivery struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty"`
-	EventID   primitive.ObjectID `bson:"event_id"`
-	WebhookID primitive.ObjectID `bson:"webhook_id"`
+	ID        bson.ObjectID `bson:"_id,omitempty"`
+	EventID   bson.ObjectID `bson:"event_id"`
+	WebhookID bson.ObjectID `bson:"webhook_id"`
 	Status    DeliveryStatus     `bson:"status"`
 	Retry     int                `bson:"retry"`
 	LastError string             `bson:"last_error,omitempty"`
@@ -69,6 +69,10 @@ func (ds DeliveryStatus) IsValid() bool {
 }
 
 func (d *Delivery) Validate() error {
+	if d.ID.IsZero() {
+		d.ID = bson.NewObjectID()
+	}
+
 	if d.EventID.IsZero() {
 		return fmt.Errorf("event_id is required")
 	}
@@ -97,6 +101,10 @@ func (d *Delivery) Validate() error {
 }
 
 func (e *Event) Validate() error {
+	if e.ID.IsZero() {
+		e.ID = bson.NewObjectID()
+	}
+
 	if e.Type == "" {
 		return fmt.Errorf("event type is required")
 	}
@@ -117,6 +125,10 @@ func (e *Event) Validate() error {
 }
 
 func (w *Webhook) Validate() error {
+	if w.ID.IsZero() {
+		w.ID = bson.NewObjectID()
+	}
+
 	if w.URL == "" {
 		return fmt.Errorf("URL is required")
 	}

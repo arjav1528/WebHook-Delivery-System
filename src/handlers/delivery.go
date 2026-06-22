@@ -7,7 +7,6 @@ import (
 	"github.com/arjav1528/webhook-delivery-system/src/config"
 	"github.com/arjav1528/webhook-delivery-system/src/models"
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
@@ -22,7 +21,7 @@ func GetDeliveryStatus(c *gin.Context) {
 
 	var delivery models.Delivery
 
-	id, err := primitive.ObjectIDFromHex(deliveryID)
+	id, err := bson.ObjectIDFromHex(deliveryID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid delivery ID"})
 		return

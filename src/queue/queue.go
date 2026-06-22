@@ -7,13 +7,13 @@ import (
 
 	"github.com/arjav1528/webhook-delivery-system/src/config"
 	"github.com/redis/go-redis/v9"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type DeliveryJob struct {
-	DeliveryID    primitive.ObjectID
-	WebhookID     primitive.ObjectID
-	EventID       primitive.ObjectID
+	DeliveryID    bson.ObjectID
+	WebhookID     bson.ObjectID
+	EventID       bson.ObjectID
 	RetryCount    int
 	NextRetryTime time.Time
 }

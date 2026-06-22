@@ -16,7 +16,6 @@ import (
 	"github.com/arjav1528/webhook-delivery-system/src/config"
 	"github.com/arjav1528/webhook-delivery-system/src/models"
 	"github.com/arjav1528/webhook-delivery-system/src/queue"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
@@ -155,7 +154,7 @@ func HandleDeliveryFailure(ctx context.Context, job queue.DeliveryJob, errorMsg 
 	return nil
 }
 
-func UpdateDeliveryStatus(ctx context.Context, deliveryID primitive.ObjectID, status models.DeliveryStatus, errMsg string, retryCount int) error {
+func UpdateDeliveryStatus(ctx context.Context, deliveryID bson.ObjectID, status models.DeliveryStatus, errMsg string, retryCount int) error {
 	filter := bson.M{"_id": deliveryID}
 
 	update := bson.M{

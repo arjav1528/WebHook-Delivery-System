@@ -11,11 +11,13 @@ import (
 )
 
 func main() {
-	r := gin.Default()
+	r := gin.New()
 	config.ConnectDB()
 	config.ConnectRedis()
 	queue.Init()
 	worker.StartWorkers(5)
+	gin.SetMode(gin.ReleaseMode)
+	r.Use(gin.Recovery())
 
 	r.GET("/", healthRoute)
 	r.POST("/webhooks", handlers.RegisterWebhook)
