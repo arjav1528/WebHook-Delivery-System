@@ -3,6 +3,9 @@ package worker
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -76,6 +79,10 @@ func ProcessDeliveryJobs(job queue.DeliveryJob) {
 		return
 	}
 
+	h := hmac.New(sha256.New, []byte(webhook.Secret))
+	h.Write(payloadBytes)
+	signature := "sha256=" + hex.EncodeToString(h.Sum(nil))
+
 	req, err := http.NewRequestWithContext(ctx, "POST", webhook.URL, bytes.NewBuffer(payloadBytes))
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
@@ -86,6 +93,7 @@ func ProcessDeliveryJobs(job queue.DeliveryJob) {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Webhook-Signature", signature)
 
 	client := &http.Client{
 		Timeout: 10 * time.Second,

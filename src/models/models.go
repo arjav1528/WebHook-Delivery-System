@@ -28,6 +28,7 @@ type Webhook struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty"`
 	URL       string             `bson:"url,omitempty"`
 	Event     EventType          `bson:"event"`
+	Secret    string             `bson:"secret,omitempty"`
 	CreatedAt time.Time          `bson:"created_at"`
 }
 
@@ -134,6 +135,10 @@ func (w *Webhook) Validate() error {
 
 	if w.CreatedAt.IsZero() {
 		w.CreatedAt = time.Now().UTC()
+	}
+
+	if w.Secret == "" {
+		return fmt.Errorf("Secret is Required")
 	}
 
 	return nil

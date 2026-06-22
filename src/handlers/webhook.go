@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"net/http"
 	"time"
 
@@ -8,6 +10,15 @@ import (
 	"github.com/arjav1528/webhook-delivery-system/src/models"
 	"github.com/gin-gonic/gin"
 )
+
+func generateSecret() (string, error) {
+	randomBytes := make([]byte, 32)
+
+	if _, err := rand.Read(randomBytes); err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(randomBytes), nil
+}
 
 func RegisterWebhook(c *gin.Context) {
 	var webhook models.Webhook
@@ -24,6 +35,16 @@ func RegisterWebhook(c *gin.Context) {
 	if webhook.CreatedAt.IsZero() {
 		webhook.CreatedAt = time.Now().UTC()
 	}
+
+	secret, err := generateSecret()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to generate secret",
+			"error":   err.Error(),
+		})
+		return
+	}
+	webhook.Secret = secret
 
 	if err := webhook.Validate(); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -45,5 +66,6 @@ func RegisterWebhook(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Webhook registered successfully",
 		"id":      res.InsertedID,
+		"secret":  webhook.Secret,
 	})
 }
