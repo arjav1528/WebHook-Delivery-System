@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sync"
@@ -16,6 +17,7 @@ var (
 
 func ConnectRedis() {
 	doOnce.Do(func() {
+		ctx := context.Background()
 		if err := godotenv.Load(".env"); err != nil {
 			initErr = err
 			fmt.Printf("err: %v\n", err)
@@ -32,6 +34,11 @@ func ConnectRedis() {
 			Password: REDIS_PASSWORD,
 			DB:       0,
 		})
+
+		if _, err := rdb.Ping(ctx).Result(); err != nil {
+			fmt.Printf("err: %v\n", err)
+			os.Exit(1)
+		}
 
 		RDB = rdb
 	})

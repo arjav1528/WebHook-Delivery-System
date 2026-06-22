@@ -109,7 +109,8 @@ func TriggerEvent(c *gin.Context) {
 			RetryCount:    0,
 			NextRetryTime: time.Now().UTC(),
 		}
-		queue.DeliveryQueue <- deliveryJob
+
+		queue.EnqueueJob(deliveryJob)
 	}
 
 	c.JSON(http.StatusAccepted, gin.H{

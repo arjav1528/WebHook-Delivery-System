@@ -24,10 +24,17 @@ func StartWorkers(numWorkers int) {
 }
 
 func ProcessJobs() {
-	for job := range queue.DeliveryQueue {
+	for {
+		job, err := queue.DequeueJob()
+		if err != nil {
+			fmt.Printf("Error dequeuing job: %v\n", err)
+			continue
+		}
+
 		if job.NextRetryTime.After(time.Now()) {
 			time.Sleep(time.Until(job.NextRetryTime))
 		}
+
 		ProcessDeliveryJobs(job)
 	}
 }
@@ -126,7 +133,7 @@ func HandleDeliveryFailure(ctx context.Context, job queue.DeliveryJob, errorMsg 
 		if err := UpdateDeliveryStatus(ctx, job.DeliveryID, models.DeliveryPending, errorMsg, newJob.RetryCount); err != nil {
 			return err
 		}
-		queue.DeliveryQueue <- newJob
+		queue.EnqueueJob(newJob)
 
 		fmt.Printf("↻ Retry scheduled: webhook %s, attempt %d, backoff %s\n", job.WebhookID, newJob.RetryCount, backoffDuration)
 		return nil
